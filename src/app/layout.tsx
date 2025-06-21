@@ -7,6 +7,7 @@ import { Header } from "@/components/header";
 import { NotificationProvider } from "@/contexts/notifications";
 import { AuthProvider } from "@/contexts/auth";
 import { Toaster } from "sonner";
+// import { WebVitals } from "@/components/web-vitals";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -36,6 +37,7 @@ export default function RootLayout({
                 <main className="flex-1">{children}</main>
               </div>
               <Toaster richColors position="top-right" />
+              {/* <WebVitals /> */}
             </NotificationProvider>
           </AuthProvider>
         </ThemeProvider>

@@ -29,22 +29,28 @@ export function Header() {
           </Link>
           <nav className="flex gap-6">
             <Link
-              href="/"
+              href="/discovery"
               className="flex items-center text-sm font-medium text-muted-foreground hover:text-foreground"
             >
-              Home
+              Discovery
             </Link>
             <Link
-              href="/dashboard"
+              href="/scripting"
               className="flex items-center text-sm font-medium text-muted-foreground hover:text-foreground"
             >
-              Dashboard
+              Scripting
             </Link>
             <Link
-              href="/analytics"
+              href="/editing"
               className="flex items-center text-sm font-medium text-muted-foreground hover:text-foreground"
             >
-              Analytics
+              Editing
+            </Link>
+            <Link
+              href="/analyze"
+              className="flex items-center text-sm font-medium text-muted-foreground hover:text-foreground"
+            >
+              Analyze
             </Link>
           </nav>
         </div>

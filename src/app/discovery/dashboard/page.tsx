@@ -1,27 +1,53 @@
 "use client"
 
 import { useState } from "react"
+import dynamic from "next/dynamic"
 import Image from "next/image"
-import { Search, Filter, TrendingUp, Users, Eye, ThumbsUp, Loader2, AlertCircle, Heart } from "lucide-react"
+import Link from "next/link"
+import { Search, Filter, TrendingUp, Users, Eye, ThumbsUp, Loader2, AlertCircle, Heart, BookmarkIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useYouTubeSearch } from "@/hooks/use-youtube-search"
-import { ScoreBreakdown } from "@/components/score-breakdown"
-import { SearchFiltersComponent } from "@/components/search-filters"
+// Lazy load components that aren't critical for initial render
+const ScoreBreakdown = dynamic(() => import("@/components/score-breakdown").then(mod => ({ default: mod.ScoreBreakdown })), {
+  loading: () => <div className="h-20 bg-muted animate-pulse rounded" />,
+  ssr: false
+})
+
+const AdvancedFilters = dynamic(() => import("@/components/advanced-filters").then(mod => ({ default: mod.AdvancedFilters })), {
+  loading: () => <div className="w-full h-96 bg-muted animate-pulse rounded-xl" />,
+  ssr: false
+})
+
+const RelatedKeywords = dynamic(() => import("@/components/related-keywords").then(mod => ({ default: mod.RelatedKeywords })), {
+  loading: () => null,
+  ssr: false
+})
+
 import type { SearchFilters } from "@/types/filters"
 import { defaultFilters } from "@/types/filters"
 import { useViralMonitor } from "@/hooks/use-viral-monitor"
 import { useSavedVideos } from "@/hooks/use-saved-videos"
+// import { useRenderPerformance, performanceMark } from "@/components/web-vitals"
 
 export default function DashboardPage() {
+  // useRenderPerformance('DashboardPage')
+  
   const [searchQuery, setSearchQuery] = useState("")
   const [filters, setFilters] = useState<SearchFilters>(defaultFilters)
   const { videos, loading, error, totalResults, search, loadMore, nextPageToken } = useYouTubeSearch()
 
   const handleSearch = async (e?: React.FormEvent) => {
     e?.preventDefault()
+    // performanceMark.start('youtube-search')
     await search(searchQuery, filters)
+    // performanceMark.end('youtube-search')
+  }
+
+  const handleKeywordClick = (keyword: string) => {
+    setSearchQuery(keyword)
+    search(keyword, filters)
   }
 
   // Monitor for viral videos
@@ -29,10 +55,11 @@ export default function DashboardPage() {
 
   // Saved videos functionality
   const { toggleSaveVideo, isSaved, loading: saveLoading } = useSavedVideos()
+  
 
   // Calculate statistics
-  const avgViralScore = videos.length > 0
-    ? Math.round(videos.reduce((sum, v) => sum + v.viralScore, 0) / videos.length)
+  const avgMultiplier = videos.length > 0
+    ? videos.reduce((sum, v) => sum + v.multiplier, 0) / videos.length
     : 0
   
   const totalViews = videos.reduce((sum, v) => sum + v.statistics.viewCount, 0)
@@ -49,14 +76,22 @@ export default function DashboardPage() {
   return (
     <div className="container mx-auto p-6 space-y-8">
       {/* Header Section */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Viral Video Dashboard</h1>
-        <p className="text-muted-foreground">
-          Discover YouTube videos with high viral potential in your niche
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Viral Video Dashboard</h1>
+          <p className="text-muted-foreground">
+            Discover YouTube videos with high viral potential in your niche
+          </p>
+        </div>
+        <Link href="/saved">
+          <Button variant="outline">
+            <BookmarkIcon className="h-4 w-4 mr-2" />
+            Saved Videos
+          </Button>
+        </Link>
       </div>
 
-      {/* Search Section */}
+      {/* Search and Filters Bar */}
       <Card>
         <CardHeader>
           <CardTitle>Search Videos</CardTitle>
@@ -64,7 +99,7 @@ export default function DashboardPage() {
             Enter keywords to find videos with viral potential from the last 30 days
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <form onSubmit={handleSearch} className="flex gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -86,14 +121,25 @@ export default function DashboardPage() {
                 'Search'
               )}
             </Button>
-            <SearchFiltersComponent 
-              filters={filters}
-              onFiltersChange={setFilters}
-              onApply={handleSearch}
-            />
           </form>
+
+          {/* Filters */}
+          <AdvancedFilters
+            filters={filters}
+            onFiltersChange={setFilters}
+            onApply={handleSearch}
+          />
         </CardContent>
       </Card>
+
+      {/* Related Keywords */}
+      {videos.length > 0 && (
+        <RelatedKeywords
+          videos={videos}
+          currentQuery={searchQuery}
+          onKeywordClick={handleKeywordClick}
+        />
+      )}
 
       {/* Error State */}
       {error && (
@@ -122,11 +168,11 @@ export default function DashboardPage() {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Avg Viral Score</CardTitle>
+              <CardTitle className="text-sm font-medium">Avg Multiplier</CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{avgViralScore}</div>
+              <div className="text-2xl font-bold">{avgMultiplier.toFixed(1)}x</div>
             </CardContent>
           </Card>
           <Card>
@@ -200,31 +246,33 @@ export default function DashboardPage() {
                   </div>
                   <div className="text-right space-y-2">
                     <div className={`text-2xl font-bold ${
-                      video.viralScore >= 80 ? 'text-green-600' :
-                      video.viralScore >= 60 ? 'text-yellow-600' :
+                      video.multiplier >= 50 ? 'text-green-600' :
+                      video.multiplier >= 10 ? 'text-yellow-600' :
                       'text-orange-600'
                     }`}>
-                      {video.viralScore}
+                      {video.multiplier >= 1000 ? `${(video.multiplier / 1000).toFixed(1)}K` : video.multiplier.toFixed(1)}x
                     </div>
-                    <p className="text-xs text-muted-foreground">Viral Score</p>
+                    <p className="text-xs text-muted-foreground">Multiplier</p>
                     <p className="text-xs text-muted-foreground">
                       {video.engagementRate.toFixed(2)}% engagement
                     </p>
                     <div className="space-y-2">
-                      <Button
-                        variant={isSaved(video.id) ? "default" : "outline"}
-                        size="sm"
-                        onClick={(e) => {
-                          e.preventDefault()
-                          e.stopPropagation()
-                          toggleSaveVideo(video)
-                        }}
-                        disabled={saveLoading}
-                        className="w-full"
-                      >
-                        <Heart className={`h-3 w-3 mr-1 ${isSaved(video.id) ? 'fill-current' : ''}`} />
-                        {isSaved(video.id) ? 'Saved' : 'Save'}
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          variant={isSaved(video.id) ? "default" : "outline"}
+                          size="sm"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            toggleSaveVideo(video)
+                          }}
+                          disabled={saveLoading}
+                          className="flex-1"
+                        >
+                          <Heart className={`h-3 w-3 mr-1 ${isSaved(video.id) ? 'fill-current' : ''}`} />
+                          {isSaved(video.id) ? 'Saved' : 'Save'}
+                        </Button>
+                      </div>
                       <ScoreBreakdown video={video} />
                     </div>
                   </div>
@@ -267,6 +315,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       )}
+
     </div>
   )
 }

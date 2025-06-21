@@ -45,10 +45,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(false)
 
         if (event === 'SIGNED_IN') {
-          toast.success('Successfully signed in!')
-          router.push('/dashboard')
+          // toast.success('Successfully signed in!') // Disabled - firing multiple times
+          router.push('/discovery')
         } else if (event === 'SIGNED_OUT') {
-          toast.success('Successfully signed out!')
+          // toast.success('Successfully signed out!') // Disabled for consistency
           router.push('/')
         } else if (event === 'PASSWORD_RECOVERY') {
           toast.success('Check your email for password reset instructions')

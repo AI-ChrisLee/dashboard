@@ -28,12 +28,18 @@ interface AnalyticsData {
   }
 }
 
-export function InsightsSummary() {
-  const [data, setData] = useState<AnalyticsData | null>(null)
-  const [loading, setLoading] = useState(true)
+interface InsightsSummaryProps {
+  initialData?: AnalyticsData
+}
+
+export function InsightsSummary({ initialData }: InsightsSummaryProps) {
+  const [data, setData] = useState<AnalyticsData | null>(initialData || null)
+  const [loading, setLoading] = useState(!initialData)
 
   useEffect(() => {
-    fetchAnalyticsData()
+    if (!initialData) {
+      fetchAnalyticsData()
+    }
   }, [])
 
   const fetchAnalyticsData = async () => {

@@ -137,59 +137,39 @@ export interface Database {
           created_at?: string
         }
       }
-      playlists: {
+      saved_videos: {
         Row: {
           id: string
           user_id: string
-          name: string
-          description: string | null
-          is_public: boolean
-          created_at: string
-          updated_at: string
+          video_id: string
+          title: string
+          channel_title: string
+          thumbnail_url: string | null
+          viral_score: number | null
+          view_count: number | null
+          saved_at: string
         }
         Insert: {
           id?: string
           user_id: string
-          name: string
-          description?: string | null
-          is_public?: boolean
-          created_at?: string
-          updated_at?: string
+          video_id: string
+          title: string
+          channel_title: string
+          thumbnail_url?: string | null
+          viral_score?: number | null
+          view_count?: number | null
+          saved_at?: string
         }
         Update: {
           id?: string
           user_id?: string
-          name?: string
-          description?: string | null
-          is_public?: boolean
-          created_at?: string
-          updated_at?: string
-        }
-      }
-      playlist_videos: {
-        Row: {
-          id: string
-          playlist_id: string
-          video_id: string
-          position: number
-          notes: string | null
-          added_at: string
-        }
-        Insert: {
-          id?: string
-          playlist_id: string
-          video_id: string
-          position: number
-          notes?: string | null
-          added_at?: string
-        }
-        Update: {
-          id?: string
-          playlist_id?: string
           video_id?: string
-          position?: number
-          notes?: string | null
-          added_at?: string
+          title?: string
+          channel_title?: string
+          thumbnail_url?: string | null
+          viral_score?: number | null
+          view_count?: number | null
+          saved_at?: string
         }
       }
       viral_scores: {
@@ -222,6 +202,117 @@ export interface Database {
           view_count?: number
           subscriber_count?: number
           calculated_at?: string
+        }
+      }
+      ideas: {
+        Row: {
+          id: string
+          user_id: string
+          content: string
+          category: string | null
+          tags: string[] | null
+          is_used: boolean
+          used_in_script_id: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          content: string
+          category?: string | null
+          tags?: string[] | null
+          is_used?: boolean
+          used_in_script_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          content?: string
+          category?: string | null
+          tags?: string[] | null
+          is_used?: boolean
+          used_in_script_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      scripts: {
+        Row: {
+          id: string
+          user_id: string
+          title: string
+          content: string | null
+          status: string
+          version: number
+          parent_script_id: string | null
+          word_count: number
+          estimated_duration: number | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          title: string
+          content?: string | null
+          status?: string
+          version?: number
+          parent_script_id?: string | null
+          word_count?: number
+          estimated_duration?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          title?: string
+          content?: string | null
+          status?: string
+          version?: number
+          parent_script_id?: string | null
+          word_count?: number
+          estimated_duration?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      projects: {
+        Row: {
+          id: string
+          user_id: string
+          title: string
+          description: string | null
+          script_id: string | null
+          status: string
+          youtube_video_id: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          title: string
+          description?: string | null
+          script_id?: string | null
+          status?: string
+          youtube_video_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          title?: string
+          description?: string | null
+          script_id?: string | null
+          status?: string
+          youtube_video_id?: string | null
+          created_at?: string
+          updated_at?: string
         }
       }
     }

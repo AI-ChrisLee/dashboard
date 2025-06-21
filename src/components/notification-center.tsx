@@ -126,9 +126,9 @@ export function NotificationCenter() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {notifications.map((notification) => (
+                  {notifications.map((notification, index) => (
                     <div
-                      key={notification.id}
+                      key={`${notification.id}-${index}`}
                       className={`p-4 rounded-lg border cursor-pointer transition-colors ${
                         notification.read ? 'bg-muted/30' : 'bg-background hover:bg-muted/50'
                       }`}

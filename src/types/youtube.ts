@@ -15,6 +15,7 @@ export interface YouTubeVideo {
     likeCount: number
     commentCount: number
   }
+  duration?: number // duration in seconds
 }
 
 export interface YouTubeChannel {
@@ -44,6 +45,7 @@ export interface YouTubeSearchResult {
 export interface ViralVideo extends YouTubeVideo {
   channel: YouTubeChannel
   viralScore: number
+  multiplier: number // views / subscribers ratio
   engagementRate: number
   scoreBreakdown?: {
     subscriberImpact: number

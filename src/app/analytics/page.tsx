@@ -1,17 +1,75 @@
-"use client"
-
-import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TrendingUp, TrendingDown, BarChart3, Clock, Users, Eye, ThumbsUp, AlertCircle } from "lucide-react"
-import { ViralTrendsChart } from "@/components/analytics/viral-trends-chart"
-import { KeywordPerformance } from "@/components/analytics/keyword-performance"
-import { ChannelGrowthTracker } from "@/components/analytics/channel-growth-tracker"
-import { ViralTimeline } from "@/components/analytics/viral-timeline"
 import { InsightsSummary } from "@/components/analytics/insights-summary"
 import { DemoNotificationTrigger } from "@/components/demo-notification-trigger"
+import { AnalyticsTabs } from "./analytics-tabs"
+import { DatabaseService } from '@/lib/supabase/db'
+import { createClient } from '@/lib/supabase/server'
 
-export default function AnalyticsPage() {
+interface AnalyticsData {
+  trending: {
+    direction: 'up' | 'down'
+    percentage: number
+    description: string
+  }
+  topPerformer: {
+    title: string
+    channel: string
+    viralScore: number
+    views: number
+  }
+  avgEngagement: {
+    current: number
+    previous: number
+    change: number
+  }
+  viralVelocity: {
+    count: number
+    timeframe: string
+  }
+}
+
+async function getAnalyticsData(): Promise<AnalyticsData> {
+  const supabase = await createClient()
+  
+  // Get trending data
+  const trendingData = {
+    direction: 'up' as const,
+    percentage: 15.3,
+    description: 'More viral videos this week'
+  }
+
+  // Get top performer (would come from DB in production)
+  const topPerformer = {
+    title: "The Ultimate Productivity Setup",
+    channel: "Tech Minimalist",
+    viralScore: 94,
+    views: 1250000
+  }
+
+  // Get average engagement
+  const avgEngagement = {
+    current: 5.8,
+    previous: 4.2,
+    change: 1.6
+  }
+
+  // Get viral velocity
+  const viralVelocity = {
+    count: 12,
+    timeframe: "last 24h"
+  }
+
+  return {
+    trending: trendingData,
+    topPerformer,
+    avgEngagement,
+    viralVelocity
+  }
+}
+
+export default async function AnalyticsPage() {
+  const analyticsData = await getAnalyticsData()
   return (
     <div className="container mx-auto p-6 space-y-8">
       {/* Header */}
@@ -26,73 +84,10 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Insights Summary Cards */}
-      <InsightsSummary />
+      <InsightsSummary initialData={analyticsData} />
 
       {/* Main Analytics Tabs */}
-      <Tabs defaultValue="trends" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="trends">Viral Trends</TabsTrigger>
-          <TabsTrigger value="keywords">Keywords</TabsTrigger>
-          <TabsTrigger value="channels">Channels</TabsTrigger>
-          <TabsTrigger value="timeline">Timeline</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="trends" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Viral Score Trends</CardTitle>
-              <CardDescription>
-                Track how viral scores change over time across different categories
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ViralTrendsChart />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="keywords" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Keyword Performance</CardTitle>
-              <CardDescription>
-                Analyze which keywords generate the most viral content
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <KeywordPerformance />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="channels" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Channel Growth Tracking</CardTitle>
-              <CardDescription>
-                Monitor channel growth and viral performance over time
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ChannelGrowthTracker />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="timeline" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Viral Video Timeline</CardTitle>
-              <CardDescription>
-                Visualize when videos go viral and track their trajectory
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ViralTimeline />
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      <AnalyticsTabs />
     </div>
   )
 }

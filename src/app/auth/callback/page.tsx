@@ -13,7 +13,7 @@ export default async function AuthCallbackPage({
     const { error } = await supabase.auth.exchangeCodeForSession(searchParams.code)
     
     if (!error) {
-      redirect('/dashboard')
+      redirect('/discovery')
     }
   }
 

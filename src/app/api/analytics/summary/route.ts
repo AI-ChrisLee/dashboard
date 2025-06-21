@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { DatabaseService } from '@/lib/supabase/db'
 import { createClient } from '@/lib/supabase/server'
+import { setCacheHeaders, CachePresets } from '@/lib/cache-headers'
 
 export async function GET() {
   try {
@@ -34,12 +35,15 @@ export async function GET() {
       timeframe: "last 24h"
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       trending: trendingData,
       topPerformer,
       avgEngagement,
       viralVelocity
     })
+    
+    // Cache analytics data for 2 minutes
+    return setCacheHeaders(response, CachePresets.shortLived)
   } catch (error) {
     console.error('Analytics summary error:', error)
     return NextResponse.json(

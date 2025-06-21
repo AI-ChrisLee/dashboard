@@ -174,11 +174,15 @@ export class ViralScoreCalculator {
   createViralVideo(video: YouTubeVideo, channel: YouTubeChannel): ViralVideo {
     const viralScore = this.calculateViralScore(video, channel)
     const engagementRate = this.getEngagementRate(video)
+    const multiplier = channel.statistics.subscriberCount > 0 
+      ? video.statistics.viewCount / channel.statistics.subscriberCount
+      : 0
     
     return {
       ...video,
       channel,
       viralScore,
+      multiplier,
       engagementRate
     }
   }

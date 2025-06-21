@@ -5,6 +5,7 @@ import { rateLimiter } from '@/lib/youtube/rate-limiter'
 import { DatabaseService } from '@/lib/supabase/db'
 import { createClient } from '@/lib/supabase/server'
 import { ViralVideo } from '@/types/youtube'
+import { setCacheHeaders, CachePresets } from '@/lib/cache-headers'
 
 export async function GET(request: NextRequest) {
   try {
@@ -31,11 +32,17 @@ export async function GET(request: NextRequest) {
     // Extract filter parameters
     const order = searchParams.get('order') as 'relevance' | 'date' | 'rating' | 'viewCount' | 'viralScore' | undefined
     const publishedAfter = searchParams.get('publishedAfter') || undefined
-    const videoDuration = searchParams.get('videoDuration') as 'short' | 'medium' | 'long' | undefined
+    let videoDuration = searchParams.get('videoDuration') as 'short' | 'medium' | 'long' | undefined
     const minSubscribers = searchParams.get('minSubscribers') ? parseInt(searchParams.get('minSubscribers')!) : undefined
     const maxSubscribers = searchParams.get('maxSubscribers') ? parseInt(searchParams.get('maxSubscribers')!) : undefined
     const minViews = searchParams.get('minViews') ? parseInt(searchParams.get('minViews')!) : undefined
     const maxViews = searchParams.get('maxViews') ? parseInt(searchParams.get('maxViews')!) : undefined
+    const includeShorts = searchParams.get('includeShorts') === 'false' ? false : true
+    
+    // If not including shorts and no duration specified, exclude short videos
+    if (!includeShorts && !videoDuration) {
+      videoDuration = 'medium' // This will exclude videos under 4 minutes (including shorts)
+    }
 
     if (!query) {
       return NextResponse.json(
@@ -88,19 +95,21 @@ export async function GET(request: NextRequest) {
       .filter((video): video is ViralVideo => video !== null)
     
     // Apply subscriber and view count filters
-    if (minSubscribers !== undefined || maxSubscribers !== undefined || minViews !== undefined || maxViews !== undefined) {
+    if (minSubscribers !== undefined || maxSubscribers !== undefined || minViews !== undefined || maxViews !== undefined || !includeShorts) {
       viralVideos = viralVideos.filter(video => {
         if (minSubscribers !== undefined && video.channel.statistics.subscriberCount < minSubscribers) return false
         if (maxSubscribers !== undefined && video.channel.statistics.subscriberCount > maxSubscribers) return false
         if (minViews !== undefined && video.statistics.viewCount < minViews) return false
         if (maxViews !== undefined && video.statistics.viewCount > maxViews) return false
+        // Filter out shorts (videos < 60 seconds) if includeShorts is false
+        if (!includeShorts && video.duration && video.duration < 60) return false
         return true
       })
     }
     
     // Sort based on the order parameter
     if (order === 'viralScore' || !order) {
-      viralVideos.sort((a, b) => b.viralScore - a.viralScore)
+      viralVideos.sort((a, b) => b.multiplier - a.multiplier)
     } else if (order === 'viewCount') {
       viralVideos.sort((a, b) => b.statistics.viewCount - a.statistics.viewCount)
     } else if (order === 'date') {
@@ -133,11 +142,15 @@ export async function GET(request: NextRequest) {
         .catch(err => console.error('Error saving search:', err))
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       items: viralVideos,
       nextPageToken: searchResult.nextPageToken,
       totalResults: searchResult.totalResults
     })
+    
+    // Add cache headers for API responses
+    // Cache for 5 minutes on CDN, serve stale for 1 hour while revalidating
+    return setCacheHeaders(response, CachePresets.apiResponse)
   } catch (error) {
     console.error('YouTube search error:', error)
     return NextResponse.json(

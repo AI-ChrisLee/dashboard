@@ -4,8 +4,6 @@ import type { Database } from '@/types/database'
 
 type Video = Database['public']['Tables']['videos']['Row']
 type Channel = Database['public']['Tables']['channels']['Row']
-type Playlist = Database['public']['Tables']['playlists']['Row']
-type PlaylistVideo = Database['public']['Tables']['playlist_videos']['Row']
 
 export class DatabaseService {
   // Cache YouTube video data
@@ -112,112 +110,5 @@ export class DatabaseService {
     }
     
     return data || []
-  }
-  
-  // Playlist operations
-  static async createPlaylist(userId: string, name: string, description?: string) {
-    const supabase = await createClient()
-    
-    const { data, error } = await supabase
-      .from('playlists')
-      .insert({
-        user_id: userId,
-        name,
-        description,
-      })
-      .select()
-      .single()
-    
-    if (error) {
-      throw new Error(`Failed to create playlist: ${error.message}`)
-    }
-    
-    return data
-  }
-  
-  static async getUserPlaylists(userId: string) {
-    const supabase = await createClient()
-    
-    const { data, error } = await supabase
-      .from('playlists')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-    
-    if (error) {
-      console.error('Error fetching playlists:', error)
-      return []
-    }
-    
-    return data || []
-  }
-  
-  static async addVideoToPlaylist(playlistId: string, videoId: string, notes?: string) {
-    const supabase = await createClient()
-    
-    // Get the current max position
-    const { data: existingVideos } = await supabase
-      .from('playlist_videos')
-      .select('position')
-      .eq('playlist_id', playlistId)
-      .order('position', { ascending: false })
-      .limit(1)
-    
-    const nextPosition = existingVideos && existingVideos.length > 0 
-      ? existingVideos[0].position + 1 
-      : 0
-    
-    const { data, error } = await supabase
-      .from('playlist_videos')
-      .insert({
-        playlist_id: playlistId,
-        video_id: videoId,
-        position: nextPosition,
-        notes,
-      })
-      .select()
-    
-    if (error) {
-      throw new Error(`Failed to add video to playlist: ${error.message}`)
-    }
-    
-    return data
-  }
-  
-  static async getPlaylistVideos(playlistId: string) {
-    const supabase = await createClient()
-    
-    const { data, error } = await supabase
-      .from('playlist_videos')
-      .select(`
-        *,
-        videos (
-          *,
-          channels (*)
-        )
-      `)
-      .eq('playlist_id', playlistId)
-      .order('position', { ascending: true })
-    
-    if (error) {
-      console.error('Error fetching playlist videos:', error)
-      return []
-    }
-    
-    return data || []
-  }
-  
-  static async removeVideoFromPlaylist(playlistId: string, videoId: string) {
-    const supabase = await createClient()
-    
-    const { error } = await supabase
-      .from('playlist_videos')
-      .delete()
-      .eq('playlist_id', playlistId)
-      .eq('video_id', videoId)
-    
-    if (error) {
-      throw new Error(`Failed to remove video from playlist: ${error.message}`)
-    }
   }
 }

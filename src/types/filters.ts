@@ -2,7 +2,7 @@ export interface SearchFilters {
   dateRange: {
     from: Date | null
     to: Date | null
-    preset?: 'today' | 'yesterday' | 'last7days' | 'last30days' | 'custom'
+    preset?: 'alltime' | 'lastmonth' | 'last3months' | 'last6months' | 'lastyear' | 'last2years' | 'today' | 'yesterday' | 'last7days' | 'last30days' | 'custom'
   }
   subscriberCount: {
     min: number | null
@@ -13,6 +13,7 @@ export interface SearchFilters {
     max: number | null
   }
   duration?: 'short' | 'medium' | 'long' | 'any'
+  includeShorts?: boolean
   sortBy: 'relevance' | 'date' | 'viewCount' | 'rating' | 'viralScore'
   sortOrder: 'desc' | 'asc'
 }
@@ -28,11 +29,12 @@ export const defaultFilters: SearchFilters = {
     max: null
   },
   viewCount: {
-    min: null,
+    min: 100000, // Default to 100K+ views
     max: null
   },
   duration: 'any',
-  sortBy: 'viralScore',
+  includeShorts: true,
+  sortBy: 'viralScore', // This sorts by multiplier in the API
   sortOrder: 'desc'
 }
 
