@@ -2,20 +2,33 @@
 
 import { useState } from "react"
 import Image from "next/image"
-import { Search, Filter, TrendingUp, Users, Eye, ThumbsUp, Loader2, AlertCircle } from "lucide-react"
+import { Search, Filter, TrendingUp, Users, Eye, ThumbsUp, Loader2, AlertCircle, Heart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useYouTubeSearch } from "@/hooks/use-youtube-search"
+import { ScoreBreakdown } from "@/components/score-breakdown"
+import { SearchFiltersComponent } from "@/components/search-filters"
+import type { SearchFilters } from "@/types/filters"
+import { defaultFilters } from "@/types/filters"
+import { useViralMonitor } from "@/hooks/use-viral-monitor"
+import { useSavedVideos } from "@/hooks/use-saved-videos"
 
 export default function DashboardPage() {
   const [searchQuery, setSearchQuery] = useState("")
+  const [filters, setFilters] = useState<SearchFilters>(defaultFilters)
   const { videos, loading, error, totalResults, search, loadMore, nextPageToken } = useYouTubeSearch()
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault()
-    await search(searchQuery)
+  const handleSearch = async (e?: React.FormEvent) => {
+    e?.preventDefault()
+    await search(searchQuery, filters)
   }
+
+  // Monitor for viral videos
+  useViralMonitor(videos)
+
+  // Saved videos functionality
+  const { toggleSaveVideo, isSaved, loading: saveLoading } = useSavedVideos()
 
   // Calculate statistics
   const avgViralScore = videos.length > 0
@@ -73,9 +86,11 @@ export default function DashboardPage() {
                 'Search'
               )}
             </Button>
-            <Button variant="outline" size="icon" disabled>
-              <Filter className="h-4 w-4" />
-            </Button>
+            <SearchFiltersComponent 
+              filters={filters}
+              onFiltersChange={setFilters}
+              onApply={handleSearch}
+            />
           </form>
         </CardContent>
       </Card>
@@ -183,7 +198,7 @@ export default function DashboardPage() {
                       </span>
                     </div>
                   </div>
-                  <div className="text-right">
+                  <div className="text-right space-y-2">
                     <div className={`text-2xl font-bold ${
                       video.viralScore >= 80 ? 'text-green-600' :
                       video.viralScore >= 60 ? 'text-yellow-600' :
@@ -192,9 +207,26 @@ export default function DashboardPage() {
                       {video.viralScore}
                     </div>
                     <p className="text-xs text-muted-foreground">Viral Score</p>
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-xs text-muted-foreground">
                       {video.engagementRate.toFixed(2)}% engagement
                     </p>
+                    <div className="space-y-2">
+                      <Button
+                        variant={isSaved(video.id) ? "default" : "outline"}
+                        size="sm"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          toggleSaveVideo(video)
+                        }}
+                        disabled={saveLoading}
+                        className="w-full"
+                      >
+                        <Heart className={`h-3 w-3 mr-1 ${isSaved(video.id) ? 'fill-current' : ''}`} />
+                        {isSaved(video.id) ? 'Saved' : 'Save'}
+                      </Button>
+                      <ScoreBreakdown video={video} />
+                    </div>
                   </div>
                 </a>
               ))}

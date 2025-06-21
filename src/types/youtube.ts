@@ -45,6 +45,19 @@ export interface ViralVideo extends YouTubeVideo {
   channel: YouTubeChannel
   viralScore: number
   engagementRate: number
+  scoreBreakdown?: {
+    subscriberImpact: number
+    viewVelocity: number
+    engagementScore: number
+    freshnessBonus: number
+    explanation: {
+      subscriberRatio: string
+      viewsPerDay: string
+      engagementRate: string
+      ageInDays: number
+    }
+  }
+  viralPotential?: string
 }
 
 export interface YouTubeApiError {

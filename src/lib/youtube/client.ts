@@ -37,15 +37,21 @@ export class YouTubeAPIClient {
   async searchVideos(
     query: string,
     maxResults: number = 50,
-    pageToken?: string
+    pageToken?: string,
+    options?: {
+      order?: 'relevance' | 'date' | 'rating' | 'viewCount' | 'title'
+      publishedAfter?: string
+      videoDuration?: 'short' | 'medium' | 'long'
+    }
   ): Promise<YouTubeSearchResult> {
     const response = await this.fetch<any>('/search', {
       part: 'snippet',
       q: query,
       type: 'video',
       maxResults: maxResults.toString(),
-      order: 'viewCount',
-      publishedAfter: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(), // Last 30 days
+      order: options?.order || 'viewCount',
+      publishedAfter: options?.publishedAfter || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+      ...(options?.videoDuration && { videoDuration: options.videoDuration }),
       ...(pageToken && { pageToken })
     })
 
@@ -150,6 +156,36 @@ export class YouTubeAPIClient {
         videoCount: parseInt(channel.statistics.videoCount || '0')
       }
     }))
+  }
+
+  /**
+   * Search strategies for finding viral videos
+   */
+  
+  // Strategy 1: Find recent videos sorted by rating (high engagement)
+  async searchByEngagement(query: string, maxResults: number = 20): Promise<YouTubeSearchResult> {
+    return this.searchVideos(query, maxResults, undefined, {
+      order: 'rating',
+      publishedAfter: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString() // Last 7 days
+    })
+  }
+
+  // Strategy 2: Find very recent videos to catch early viral trends
+  async searchRecentVideos(query: string, maxResults: number = 20): Promise<YouTubeSearchResult> {
+    return this.searchVideos(query, maxResults, undefined, {
+      order: 'date',
+      publishedAfter: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString() // Last 48 hours
+    })
+  }
+
+  // Strategy 3: Search with niche/long-tail keywords
+  async searchNicheContent(baseQuery: string, modifier: string, maxResults: number = 20): Promise<YouTubeSearchResult> {
+    // Combine base query with modifiers like "tutorial", "explained", "for beginners"
+    const nicheQuery = `${baseQuery} ${modifier}`
+    return this.searchVideos(nicheQuery, maxResults, undefined, {
+      order: 'relevance',
+      publishedAfter: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString() // Last 14 days
+    })
   }
 }
 
